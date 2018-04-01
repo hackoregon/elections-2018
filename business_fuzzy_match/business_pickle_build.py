@@ -4,14 +4,11 @@ import time
 import re
 import pickle
 from fuzzymatchlist import FuzzyList
-
+import argparse
 
 class BusinessMatching(object):
-    def __init__(self, input_file=None):
-        if input_file == None:
-            self.input_name = "transaction_detail_first_batch.csv"
-        else:
-            self.input_name = input_file
+    def __init__(self, input_file):
+        self.input_name = input_file
         self.input_dataframe = pd.read_csv(self.input_name, low_memory=False)
         self.build_sub_df()
 
@@ -33,8 +30,15 @@ class BusinessMatching(object):
         with open("{}{}.pickle".format(re.sub("(\.).+", "", self.input_name), "_fm"), "wb") as f:
             pickle.dump(self.top_choices_dict, f, protocol=pickle.HIGHEST_PROTOCOL)
 
-if __name__ == "__main__":
+def main_call(input_file):
     BM = BusinessMatching()
     BM.build_sub_df()
     BM.build_top_choices()
     BM.save_pickle()
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Camera frame grab.")
+    parser.add_argument('--save_loc', help='Image save location.')
+    parser.add_argument('--rec_time', help='Length of time you want to record for.')
+    parser.add_argument('--camera_num', help='Camera number in camera_info.json')
+    args = parser.parse_args()
