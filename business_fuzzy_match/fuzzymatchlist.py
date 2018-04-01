@@ -16,7 +16,7 @@ class FuzzyList(object):
         Searches sublist for the top 20 matches.
         """
         count, query = self.get_broken_string(query)
-        if count > 1:
+        if count > 1 and count < 11:
             search_list = self.broken_length_dict[count - 1] + self.broken_length_dict[count] + self.broken_length_dict[count + 1]
         elif count == max(self.broken_length_dict.keys()):
             search_list = self.broken_length_dict[count - 1] + self.broken_length_dict[count]
