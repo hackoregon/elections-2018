@@ -12,7 +12,7 @@ class BusinessMatching(object):
             self.input_name = "transaction_detail_first_batch.csv"
         else:
             self.input_name = input_file
-        self.input_dataframe = pd.read_csv(input_file, low_memory=False)
+        self.input_dataframe = pd.read_csv(self.imput_name, low_memory=False)
         self.build_sub_df()
 
     def build_sub_df(self):
