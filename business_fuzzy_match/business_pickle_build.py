@@ -30,7 +30,7 @@ class BusinessMatching(object):
                 print(str(time.time() - start_time))
 
     def save_pickle(self):
-        with open("{}{}.pickle".foromat(re.sub("(\.).+", "", self.input_name), "_fm"), "wb") as f:
+        with open("{}{}.pickle".format(re.sub("(\.).+", "", self.input_name), "_fm"), "wb") as f:
             pickle.dump(self.top_choices_dict, f, protocol=pickle.HIGHEST_PROTOCOL)
 
 if __name__ == "__main__":
