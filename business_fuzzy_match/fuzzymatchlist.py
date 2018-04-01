@@ -18,6 +18,8 @@ class FuzzyList(object):
         count, query = self.get_broken_string(query)
         if count > 1:
             search_list = self.broken_length_dict[count - 1] + self.broken_length_dict[count] + self.broken_length_dict[count + 1]
+        elif count == max(self.broken_length_dict.keys()):
+            search_list = self.broken_length_dict[count - 1] + self.broken_length_dict[count]
         else:
             search_list = self.broken_length_dict[count + 1] + self.broken_length_dict[count]
         if query in search_list:
