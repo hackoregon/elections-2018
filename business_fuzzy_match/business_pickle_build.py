@@ -4,6 +4,7 @@ import time
 import re
 import pickle
 from fuzzymatchlist import FuzzyList
+from nltk import ngrams
 import argparse
 import os
 
@@ -43,8 +44,20 @@ class BusinessMatching(object):
         business_sub_df = self.input_dataframe[self.input_dataframe["Address Book Type"] == "Business Entity"].copy()
         individual_sub_df = self.input_dataframe[self.input_dataframe["Address Book Type"] == "Individual"].copy()
         company_list.extend(list(np.unique(list(business_sub_df["Name"]))))
+        individual_sub_employer_list = []
+        for employer_name in list(individual_sub_df["Employer Name"]):
+            employer_name, _, _ = self.get_name_parts(employer_name)
+            if employer_name != None:
+                individual_sub_employer_list.append(employer_name)
+        company_list.extend(individual_sub_employer_list)
+        self.choices_set = set(company_list.copy())
+        with open("companies.pickle", "wb") as f:
+            pickle.dump(self.choices_set, f, protocol=pickle.HIGHEST_PROTOCOL)
 
     def get_name_parts(self, employer_name):
+        """
+        Break Employer Name field into: Employer, City State
+        """
         try:
             employer_name_l = employer_name.lower()
         except:
@@ -72,18 +85,21 @@ class BusinessMatching(object):
         return self.get_backwards_string(cleaned_employer.strip()), city, state
 
     def get_backwards_string(self, string):
+        """
+        Reverses string by word.
+        """
         return str.join(" ", string.split(" ")[::-1])
 
-    def build_sub_df(self):
-        self.business_sub_df = self.input_dataframe[self.input_dataframe["Address Book Type"] == "Business Entity"].copy()
-
-    def build_top_choices(self):
+    def build_top_choices(self, num=5):
+        """
+        Build top 'num' fuzzy match choices dict for all of the currently loaded choices in self.choices_set.
+        """
         self.top_choices_dict = {}
         start_time = time.time()
-        full_list = list(np.unique(list(self.business_sub_df["Name"])))
+        full_list = list(self.choices_set)
         FL = FuzzyList(full_list)
         for i, name in enumerate(full_list):
-            self.top_choices_dict[name] = FL.get_top_n_matches(name, 5)
+            self.top_choices_dict[name] = FL.get_top_n_matches(name, num)
             if i % 100 == 0:
                 print(str(np.round(i/len(full_list),3) * 100) + "%")
                 print(str(time.time() - start_time))
@@ -92,9 +108,8 @@ class BusinessMatching(object):
         with open("{}{}.pickle".format(re.sub("(\.).+", "", self.input_name), "_fm"), "wb") as f:
             pickle.dump(self.top_choices_dict, f, protocol=pickle.HIGHEST_PROTOCOL)
 
-def main_call(input_file):
-    BM = BusinessMatching()
-    BM.build_sub_df()
+def main_call(input_file_name):
+    BM = BusinessMatching(input_file_name)
     BM.build_top_choices()
     BM.save_pickle()
 
@@ -102,3 +117,4 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Fuzzy match on business names.")
     parser.add_argument('--input_doc', help='Input CSV doc.')
     args = parser.parse_args()
+    main_call(args.input_doc)
