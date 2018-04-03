@@ -8,4 +8,4 @@
 * fuzzymatchlist.py:
   > Script for pulling first N fuzzy matches based off input list. Utilizes the package fuzzywuzzy as well as some string gram length logic for speed.
 * city_state.pickle:
-	> Pickled dict with keys: state, values: set of cities.
+	> Pickled dict with keys: state, values: set of city names.
