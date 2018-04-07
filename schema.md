@@ -5,6 +5,9 @@
     - foreign key (to committeeslist org stmt)
 * **committee_name** varchar(255)
 * **committee_description** varchar(255)
+* **effecitve** date
+* **expiration** date
+* **file_type** varchar(32)
 
 ## Committees List
 * **id** int primary
