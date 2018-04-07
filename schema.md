@@ -81,7 +81,6 @@
 * **employer_name** varchar(255)
 * **exam_letter_date** date
 * **filed_date** timestamp
-* **inkind_independent_expenditures** varchar(255)
 * **interest_rate** varchar(255)
 * **name** varchar(255)
 * **occupation** varchar(255)
