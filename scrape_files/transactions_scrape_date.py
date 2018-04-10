@@ -1,21 +1,21 @@
-%cd /home/mbodenator/Documents/hack_oregon/elections-2018-master
+# %cd /home/mbodenator/Documents/hack_oregon/elections-2018-master
 import pandas as pd
 import requests
 from lxml import html
 import time
 from math import ceil
-import logging
+# import logging
 from datetime import datetime
 import sys
 
-logging.basicConfig(filename='logs/transaction_scrape_{:%m%d%y%H%M%S}.log'.format(datetime.now()),level=logging.INFO)
+# logging.basicConfig(filename='logs/transaction_scrape_{:%m%d%y%H%M%S}.log'.format(datetime.now()),level=logging.INFO)
 
 def transaction_further_pages(committee_id,page,session):
     next_url = 'https://secure.sos.state.or.us/orestar/gotoPublicTransactionSearchResults.do?cneSearchButtonName=next&cneSearchFilerCommitteeId={0}&cneSearchContributorTxtSearchType=C&cneSearchFilerCommitteeTxtSearchType=C&cneSearchPageIdx={1}'.format(committee_id,page)
     headers = {'Content-Type':'application/x-www-form-urlencoded','User-Agent':'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/54.0.2840.71 Safari/537.36',
                 'Origin':'https://secure.sos.state.or.us',
                 'Referer':'https://secure.sos.state.or.us/orestar/gotoPublicTransactionSearchResults.do'}
-    time.sleep(30)
+    time.sleep(5)
     t = session.get(next_url,headers=headers)
     body = html.fromstring(t.text)
     # grab header row from the top from the transaction table
@@ -34,17 +34,17 @@ def transaction_further_pages(committee_id,page,session):
 
 def transactions_scrape(committee_id):
     """ scrape up to 10k transactions for the provided committee id """
-    logging.info('committee_id: {}'.format(committee_id))
+    # logging.info('committee_id: {}'.format(committee_id))
     s = requests.Session()
     transaction_url = 'https://secure.sos.state.or.us/orestar/gotoPublicTransactionSearchResults.do'
     headers = {'Content-Type':'application/x-www-form-urlencoded','User-Agent':'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/54.0.2840.71 Safari/537.36',
             'Origin':'https://secure.sos.state.or.us',
             'Referer':'https://secure.sos.state.or.us/orestar/gotoPublicTransactionSearch.do'}
     data = {'cneSearchButtonName':'search','cneSearchPageIdx':'0','cneSearchFilerCommitteeId':str(committee_id),'cneSearchFilerCommitteeTxtSearchType':'C','cneSearchContributorTxtSearchType':'C',
-            'cneSearchTranEndDate':'9/26/2016','OWASP_CSRFTOKEN':'F251-AX8K-O7SW-7E36-3D0C-23S8-ILBF-OPOB'}
+            'cneSearchTranStartDate':start,'cneSearchTranEndDate':end,'OWASP_CSRFTOKEN':'F251-AX8K-O7SW-7E36-3D0C-23S8-ILBF-OPOB'}
     time.sleep(5)
     r = s.post(transaction_url,headers=headers,data=data)
-    logging.info('initial status_code: {}'.format(r.status_code))
+    # logging.info('initial status_code: {}'.format(r.status_code))
     # if orestar is blocking requests, exit the scraper
     if r.status_code == 403:
         return [],1
@@ -67,7 +67,7 @@ def transactions_scrape(committee_id):
         df = []
         hits = 0
         logging.info('No data')
-    logging.info('hits: {}'.format(hits))
+    # logging.info('hits: {}'.format(hits))
     # if more than 50 transactions, calculate the number of pages and scrape the rest
     if hits > 50:
         end_range = ceil(hits/50) if ceil(hits/50) < 102 else 101
@@ -75,6 +75,7 @@ def transactions_scrape(committee_id):
             next_df,s = transaction_further_pages(committee_id,page,s)
             if len(df) > 0 and len(next_df):
                 df = pd.concat([df,next_df])
+    return df,0
     # orestar maxes out at 5k transactions, if there's more, reverse date ordering
     # and grab 5k more, if more log it
     # if hits > 5000:
@@ -111,7 +112,7 @@ def transactions_scrape(committee_id):
         #     if len(df) > 0 and len(next_df):
         #         df = pd.concat([df,next_df])
         # logging.info('length of results: {}'.format(len(df)))
-    return df,0
+
 # transactions_scrape(113)
 # committees = pd.read_csv('committees_list.tsv',sep='\t')
 # committees.info()
@@ -119,9 +120,12 @@ def transactions_scrape(committee_id):
 # committees_ids = list(committees['ID'])
 # logging.info(df.info())
 # start = int(sys.argv[-3])
-cid = sys.argv[-3]
+cid = sys.argv[-4]
 # cid = 113
-end = int(sys.argv[-2])
+# end = '9/26/2016'
+start = sys.argv[-3]
+end = sys.argv[-2]
+# file_num = 1
 file_num = sys.argv[-1]
 # committees_ids[1524]
 # df, point_break = transactions_scrape(17313)
