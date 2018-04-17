@@ -5,6 +5,7 @@ command line args: committee_id start_date end_date file_num (eg python transact
 - [ ] 4572 1/1/1900 12/7/17 1
 - [ ] 3396 10/15/11 9/15/14 1
 - [ ] 191 5/27/2011 4/28/13 1
+- [ ] 39 12/23/2009 10/25/16 1
 
 ## Marty
 - [ ] date 1
@@ -14,3 +15,4 @@ command line args: committee_id start_date end_date file_num (eg python transact
 - [ ] 1524 2/18/11 8/24/12 1
 - [ ] 135 5/22/2009 10/20/2011 1
 - [ ] 275 2/21/2009 6/2/2016 1
+- [ ] 682 10/18/2010 10/8/12 1
