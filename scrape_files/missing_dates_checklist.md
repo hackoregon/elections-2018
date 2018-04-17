@@ -1,6 +1,6 @@
 # Missing Dates Checklist
 Instructions: run transaction_scrape_date.py (dependencies: pandas, requests, lxml)
-command line args: committee_id start_date end_date file_num (eg python transaction_scrape_date.py 4572 12/7/17 1)
+command line args: committee_id start_date end_date file_num (eg python transactions_scrape_date.py 4572 1/1/1900 12/7/17 1)
 ## Brian
 - [ ] 4572 1/1/1900 12/7/17 1
 - [ ] 3396 10/15/11 9/15/14 1
@@ -12,6 +12,8 @@ command line args: committee_id start_date end_date file_num (eg python transact
 - [ ] 15192 4/16/2016 10/25/16 1
 - [ ] 348 4/3/2010 8/4/15 1 
 - [ ] 33 1/1/1900 12/11/17 1
+- [ ] 54 1/1/1900 4/30/14 1 
+- [ ] 931 1/1/1900 4/21/17 1
 
 ## Michael
 - [ ] 1524 2/18/11 8/24/12 1
