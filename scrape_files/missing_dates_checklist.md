@@ -14,7 +14,7 @@ After it runs, makes sure the output covers the date range. If not, run for a se
 - [x] 15192 4/16/2016 10/25/16 1
 - [x] 348 4/3/2010 8/4/15 1 
 - [x] 33 1/1/1900 12/11/17 1
-- [ ] 54 1/1/1900 4/30/14 1 
+- [x] 54 1/1/1900 4/30/14 1 
 - [ ] 931 1/1/1900 4/21/17 1
 
 ## Michael
