@@ -4,10 +4,10 @@ command line args: committee_id start_date end_date file_num (eg python transact
 After it runs, makes sure the output covers the date range. If not, run for a second file covering the remaining missing date range. Repeat as necessary.
 
 ## Brian
-- [ ] 4572 1/1/1900 12/7/17 1
-- [ ] 3396 10/15/11 9/15/14 1
-- [ ] 191 5/27/2011 4/28/13 1
-- [ ] 39 12/23/2009 10/25/16 1
+- [x] 4572 1/1/1900 12/7/17 1
+- [x] 3396 10/15/11 9/15/14 1
+- [x] 191 5/27/2011 4/28/13 1
+- [x] 39 12/23/2009 10/25/16 1
 
 ## Marty
 - [x] 2690 5/3/2011 6/29/11 1 
