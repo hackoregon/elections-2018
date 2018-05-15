@@ -3,18 +3,19 @@ Useful functions for transaction analysis
 
 '''
 
-
+import datetime
 import psycopg2
 import json
 import os
+import sys
 import pandas as pd
 import functools
-from typing import Dict
-
+from typing import Dict, Iterable
+import numpy as np
+import itertools
 
 ELECTION_DB_HOST = '54.202.102.40'
 ELECTION_DB_NAME = 'local-elections-finance'
-
 
 class Memoize():
     """ A wrapper for caching function results """
@@ -32,6 +33,28 @@ class Memoize():
 
         return wrapper
 
+
+def calc_icdf(x: Iterable[float], counts: Iterable[int], values: Iterable[float]) -> np.ndarray:
+    '''
+    Caculates the inverse CDF given counts and valudes
+    :param x: Values to calculate inverse CDF
+    :param counts: Bin counts
+    :param values: Bin values
+    :return:
+    '''
+    values = np.array(values)
+    counts = np.array(counts)
+
+    index = np.argsort(values)
+
+    values = values[index]
+    norm_counts = counts / np.sum(counts)
+    norm_counts = norm_counts[index]
+
+    return np.interp(x=x,
+                     xp=np.cumsum(norm_counts),
+                     fp=values)
+
 @Memoize()
 def get_db_login_info() -> Dict[str, str]:
     '''
@@ -39,11 +62,8 @@ def get_db_login_info() -> Dict[str, str]:
     :return:
     '''
 
-    directories = os.path.abspath(__file__).split(os.sep)
-    root_path = os.sep.join(directories[:directories.index('elections-2018')+1])
-
     login_file = None
-    for path, dirs, files in os.walk(root_path):
+    for path, dirs, files in itertools.chain(*(os.walk(path) for path in sys.path[::-1])):
         files = list(filter(lambda x: x == 'elections_login.json', files))
         if len(files) > 0:
             login_file = os.path.join(path, files[0])
@@ -80,7 +100,7 @@ def query_db(table: str,
     conn = psycopg2.connect(host=host, dbname=dbname, user=user, password=password)
     query = 'SELECT {0:s} FROM {1:s}'.format(select_stmt, table)
     if len(where_stmt) > 0:
-        query += ' WHERE {1:s}'.format(where_stmt)
+        query += ' WHERE {0:s}'.format(where_stmt)
 
     data = pd.read_sql(query, conn)
     conn.close()
@@ -99,11 +119,22 @@ def fetch_statement_of_org() -> pd.DataFrame:
     return state_org
 
 
-def fetch_transactions(statement_of_org: pd.DataFrame=None) -> pd.DataFrame:
+def fetch_transactions(statement_of_org: pd.DataFrame=None,
+                       start_date: datetime.date=None,
+                       end_date: datetime.date=None) -> pd.DataFrame:
     '''
     Fetch transactions from database.  Uses the statement_of_org to map all committee names to committee ids.
     '''
-    trans = query_db(table='transactions')
+    where_stmt = ''
+    if start_date is not None:
+        where_stmt += " transaction_date > '{:s}'".format(start_date.strftime('%Y/%m/%d'))
+
+    if end_date is not None:
+        where_stmt += '' if len(where_stmt) == 0 else ' and'
+        where_stmt += " transaction_date < '{:s}'".format(end_date.strftime('%Y/%m/%d'))
+
+
+    trans = query_db(table='transactions', where_stmt=where_stmt)
 
     trans['committee_id'] = trans['committee_id'].apply(str)
     trans['contributor_payee'] = trans['contributor_payee'].apply(str)
