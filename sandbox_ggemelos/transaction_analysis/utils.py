@@ -33,6 +33,33 @@ class Memoize():
 
         return wrapper
 
+class CachedProperty(object):
+    '''
+    Decorator for a cached property.  Similar to a property, but is only computed once.  Helpful for expensive to
+    compute properties.  The property is computed and replaced with an attribute at initialization.
+
+    :Example:
+
+        >>> class foo(object):
+        ...     def __init__(self,value):
+        ...         self.x = value
+        ...
+        ...     @CachedProperty()
+        ...     def compute_intense_property(self):     # Will only be computed once
+        ...         return x
+    '''
+
+    def __init__(self, func):
+        self.__doc__ = getattr(func, '__doc__')
+        self.func = func
+
+    def __get__(self, obj, cls):
+        if obj is None:
+            return self
+        value = obj.__dict__[self.func.__name__] = self.func(obj)
+        return value
+
+
 
 def calc_icdf(x: Iterable[float], counts: Iterable[int], values: Iterable[float]) -> np.ndarray:
     '''
