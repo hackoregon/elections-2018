@@ -17,12 +17,15 @@ import webbrowser
 
 class Graph(object):
     '''
-    Class for Graphical Analysis of Transactions
+    Undirected graph class
     '''
 
     _GraphType = nx.Graph
 
     def __init__(self, edges: Dict[Tuple[str, str], float]):
+        '''
+        :param edges: Dictionary of edges, the key is a tuple of nodes and the value is teh strength of the edge
+        '''
         sources, sinks = zip(*edges.keys())
 
         # Relabel Nodes with Ints
@@ -47,11 +50,20 @@ class Graph(object):
 
     @CachedProperty
     def conn_comp(self):
+        '''
+        Connected components of the graph
+        '''
         return sorted(nxconn.connected_component_subgraphs(self.graph),
                       key=lambda g: g.number_of_nodes(),
                       reverse=True)
 
     def calc_stats(self, percentiles: Optional[Iterable[float]] = None) -> pd.DataFrame:
+        '''
+        Returns key statistics for the graph
+
+        :param percentiles: Optinal list of percentages to calculate for key graph statistics
+        :return:
+        '''
 
         # Get degree statistics
         print('Number of nodes: {:,.0f}'.format(self.graph.number_of_nodes()))
@@ -130,7 +142,10 @@ class Graph(object):
 
         return self.graph.subgraph(get_node_list(self.graph, node_id, distance, [node_id]))
 
-    def _create_d3_file(self, filename, nodes: Optional[Iterable[int]]=None, groups: Optional[Dict[str, int]]=None):
+    def _create_d3_file(self,
+                        filename,
+                        nodes: Optional[Iterable[int]]=None,
+                        groups: Optional[Dict[str, Iterable[int]]]=None):
         lookUp = {}
         node_json = []
 
@@ -184,7 +199,18 @@ class Graph(object):
         with open(filename, 'w') as fout:
             json.dump(loadJSON, fout, indent=4)
 
-    def show_in_d3_force_directed(self, file_path, nodes: Optional[Iterable[int]]=None, groups: Optional[Dict[str, int]]=None):
+    def show_in_d3_force_directed(self,
+                                  file_path,
+                                  nodes: Optional[Iterable[int]]=None,
+                                  groups: Optional[Dict[str, Iterable[int]]]=None):
+        '''
+        Show graph in D3 visualization.  Function will create necessary D3 files and launch browser to display graph.
+
+        :param file_path: Path to write D3 files
+        :param nodes: Optional list of node ids to display.  If not specified, entire graph is plotted.  If the graph is
+                      large, this could freeze the browser.
+        :param groups: Optional dictionary where keys are group names and values are lists of node ids.
+        '''
         def create_d3_html_file(filename, graph_file):
             html_code = '''
             <!DOCTYPE html>
@@ -272,9 +298,16 @@ class Graph(object):
 
 
 class DiGraph(Graph):
+    '''
+    Directed graph class
+    '''
+
     _GraphType = nx.DiGraph
 
     def __init__(self, edges: Dict[Tuple[str, str], float]):
+        '''
+        :param edges: Dictionary of edges, the key is a tuple of nodes and the value is teh strength of the edge
+        '''
         super().__init__(edges=edges)
 
         # Get degree statistics
