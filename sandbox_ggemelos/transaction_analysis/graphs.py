@@ -3,7 +3,7 @@ Graph Module
 '''
 
 import os
-from typing import Dict, Tuple, Optional, Set, Iterable
+from typing import Dict, Tuple, Optional, Set, Iterable, Any
 from collections import defaultdict as ddict
 import numpy as np
 import pandas as pd
@@ -20,7 +20,7 @@ class Graph(object):
     Class for Graphical Analysis of Transactions
     '''
 
-    graph = nx.Graph()
+    _GraphType = nx.Graph
 
     def __init__(self, edges: Dict[Tuple[str, str], float]):
         sources, sinks = zip(*edges.keys())
@@ -37,12 +37,13 @@ class Graph(object):
         self.nodes = np.unique(np.hstack((self.sources, self.sinks)))
 
         # Create Graph
+        self.graph = self._GraphType()
         self.graph.add_weighted_edges_from([(nodes[0], nodes[1], strength) for nodes, strength in edges.items()])
 
         # Get degree statistics
-        self.degrees = ddict(lambda: 0)
+        self.degrees_counts = ddict(lambda: 0)
         for node in self.nodes:
-            self.degrees[self.graph.degree(node)] += 1
+            self.degrees_counts[self.graph.degree(node)] += 1
 
     @CachedProperty
     def conn_comp(self):
@@ -58,7 +59,7 @@ class Graph(object):
 
         percentiles = percentiles if percentiles is not None else [0.25, 0.5, 0.75, 0.90, 0.99, 1]
 
-        degrees, counts = zip(*self.degrees.items())
+        degrees, counts = zip(*self.degrees_counts.items())
         prct_degree = calc_icdf(percentiles, counts, degrees)
 
         df = pd.DataFrame(data=prct_degree,
@@ -129,9 +130,14 @@ class Graph(object):
 
         return self.graph.subgraph(get_node_list(self.graph, node_id, distance, [node_id]))
 
-    def _create_d3_file(self, filename, nodes: set=None):
+    def _create_d3_file(self, filename, nodes: Optional[Iterable[int]]=None, groups: Optional[Dict[str, int]]=None):
         lookUp = {}
-        nodeJSON = []
+        node_json = []
+
+        if groups is not None:
+            group_lookup = ddict(lambda: 'no group specified')
+            for name, group in groups.items():
+                group_lookup.update({self.get_node_name(node_id): name for node_id in group})
 
         if nodes is not None:
             uniqueNodesList = sorted([self.get_node_name(node_id) for node_id in self.nodes if node_id in nodes])
@@ -143,12 +149,13 @@ class Graph(object):
             anonDict["nodeID"] = i
             lookUp[name] = i
             anonDict["name"] = name
-            anonDict["group"] = 1
-            nodeJSON.append(anonDict)
+            anonDict["group"] = group_lookup[name]
+            node_json.append(anonDict)
 
-        linkJSON = []
+        link_json = []
+        weights = []
         for source, target in self.graph.edges:
-            value = self.graph.get_edge_data(source, target)['weight']
+            value = abs(self.graph.get_edge_data(source, target)['weight'])
             anonDict = {}
             if self.get_node_name(source) not in uniqueNodesList or self.get_node_name(target) not in uniqueNodesList:
                 continue
@@ -157,16 +164,27 @@ class Graph(object):
             anonDict["source"] = sourceID
             anonDict["target"] = targetID
             anonDict["value"] = value
-            linkJSON.append(anonDict)
+
+            weights.append(value)
+            link_json.append(anonDict)
+
+        # Map edge weights
+        min_weight = min(weights)
+        max_weight = max(weights)
+        for link in link_json:
+            if min_weight == max_weight:
+                link['value'] = 3
+            else:
+                link['value'] = 9 * (link['value'] - min_weight) / (max_weight - min_weight) + 1
 
         loadJSON = {}
-        loadJSON["nodes"] = nodeJSON
-        loadJSON["links"] = linkJSON
+        loadJSON["nodes"] = node_json
+        loadJSON["links"] = link_json
 
         with open(filename, 'w') as fout:
             json.dump(loadJSON, fout, indent=4)
 
-    def show_in_d3_force_directed(self, file_path, nodes: set=None):
+    def show_in_d3_force_directed(self, file_path, nodes: Optional[Iterable[int]]=None, groups: Optional[Dict[str, int]]=None):
         def create_d3_html_file(filename, graph_file):
             html_code = '''
             <!DOCTYPE html>
@@ -188,95 +206,10 @@ class Graph(object):
             <script src="%s"></script>
             <script>
 
-            var width = 1000,
-                height = 1000;
+            var width = 2000,
+                height = 1500;
 
-            var color = d3.scale.category20();
-
-            var force = d3.layout.force()
-                .charge(-500)
-                .linkDistance(300)
-                .size([width, height]);
-
-            var svg = d3.select("body").append("svg")
-                .attr("width", width)
-                .attr("height", height);
-
-            d3.json("%s", function(error, graph) {
-              force
-                  .nodes(graph.nodes)
-                  .links(graph.links)
-                  .start();
-
-              var link = svg.selectAll(".link")
-                  .data(graph.links)
-                .enter().append("line")
-                  .attr("class", "link")
-                  .style("stroke-width", function(d) { return Math.exp(d.value * 2); });
-
-              var node = svg.selectAll(".node")
-                  .data(graph.nodes)
-                .enter().append("circle")
-                  .attr("class", "node")
-                  .attr("r", 10)
-                  .style("fill", function(d) { return color(d.group); })
-                  .call(force.drag);
-
-              node.append("title")
-                  .text(function(d) { return d.name; });
-
-              force.on("tick", function() {
-                link.attr("x1", function(d) { return d.source.x; })
-                    .attr("y1", function(d) { return d.source.y; })
-                    .attr("x2", function(d) { return d.target.x; })
-                    .attr("y2", function(d) { return d.target.y; });
-
-                node.attr("cx", function(d) { return d.x; })
-                    .attr("cy", function(d) { return d.y; });
-              });
-            });
-
-            </script>
-            ''' % (os.path.join(RESOURCES, 'd3.v3.min.js'), graph_file)
-
-            with open(filename, 'w') as fout:
-                fout.write(html_code)
-
-
-        graph_file = os.path.join(file_path, 'graph.json')
-        html_file = os.path.join(file_path, 'force_directed.html')
-
-        self._create_d3_file(filename=graph_file, nodes=nodes)
-        create_d3_html_file(filename=html_file, graph_file=graph_file)
-
-        webbrowser.open('file://' + html_file)
-
-    def show_in_d3_static(self, file_path, nodes: set = None):
-        def create_d3_html_file(filename, graph_file):
-            html_code = '''
-            <!DOCTYPE html>
-            <meta charset="utf-8">
-            <style>
-
-            .node {
-              stroke: #fff;
-              stroke-width: 5px;
-            }
-
-            .link {
-              stroke: #999;
-              stroke-opacity: .6;
-            }
-
-            </style>
-            <body>
-            <script src="%s"></script>
-            <script>
-
-            var width = 1000,
-                height = 1000;
-
-            var color = d3.scale.category20();
+            var color = d3.scale.category10();
 
             var force = d3.layout.force()
                 .charge(-500)
@@ -297,7 +230,7 @@ class Graph(object):
                   .data(graph.links)
                   .enter().append("line")
                   .attr("class", "link")
-                  .style("stroke-width", function(d) { return Math.exp(d.value * 2); });
+                  .style("stroke-width", function(d) { return d.value; });
 
               var node = svg.selectAll(".node")
                   .data(graph.nodes)
@@ -327,27 +260,29 @@ class Graph(object):
             with open(filename, 'w') as fout:
                 fout.write(html_code)
 
-        graph_file = os.path.join(file_path, 'graph.json')
-        html_file = os.path.join(file_path, 'index.html')
 
-        self._create_d3_file(filename=graph_file, nodes=nodes)
+        graph_file = os.path.join(file_path, 'graph.json')
+        html_file = os.path.join(file_path, 'force_directed.html')
+
+        self._create_d3_file(filename=graph_file, nodes=nodes, groups=groups)
         create_d3_html_file(filename=html_file, graph_file=graph_file)
 
         webbrowser.open('file://' + html_file)
 
 
+
 class DiGraph(Graph):
-    graph = nx.DiGraph()
+    _GraphType = nx.DiGraph
 
     def __init__(self, edges: Dict[Tuple[str, str], float]):
         super().__init__(edges=edges)
 
         # Get degree statistics
-        self.degrees_in = ddict(lambda: 0)
-        self.degrees_out = ddict(lambda: 0)
+        self.degrees_in_counts = ddict(lambda: 0)
+        self.degrees_out_counts = ddict(lambda: 0)
         for node in self.nodes:
-            self.degrees_in[self.graph.in_degree(node)] += 1
-            self.degrees_out[self.graph.out_degree(node)] += 1
+            self.degrees_in_counts[self.graph.in_degree(node)] += 1
+            self.degrees_out_counts[self.graph.out_degree(node)] += 1
 
 
     @property
