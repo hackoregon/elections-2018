@@ -1,3 +1,7 @@
+'''
+Funding similarity module
+'''
+
 from functools import reduce
 from sandbox_ggemelos.transaction_analysis.utils import fetch_transactions, fetch_statement_of_org
 from sandbox_ggemelos.transaction_analysis.graphs import Graph
@@ -11,7 +15,7 @@ INVALID_PAYEES = set(['Miscellaneous Cash Expenditures $100 and under',
                       'Miscellaneous Cash Contributions $100 and under'])
 
 
-class SIMILARITY_GRAPH():
+class SimilarityGraph():
     '''
     Class for graphical representation of funding similarities between committees.  As a similarity measure between
     committee funding sources, we use the projection of the normalized funding profiles

@@ -1,15 +1,15 @@
 import datetime
-from sandbox_ggemelos.transaction_analysis.funding_similarity import SIMILARITY_GRAPH
+from sandbox_ggemelos.transaction_analysis.funding_similarity import SimilarityGraph
 
 
 ## INSTANCIATE SIMILARITY GRAPH
 START_DATE = datetime.date(2016, 11, 15)
 END_DATE = datetime.date(2017, 11, 15)
 
-graph = SIMILARITY_GRAPH(start_date=START_DATE,
-                         end_data=END_DATE,
-                         min_donation_amount=1000,
-                         min_similarity=0.5)
+graph = SimilarityGraph(start_date=START_DATE,
+                        end_data=END_DATE,
+                        min_donation_amount=1000,
+                        min_similarity=0.5)
 
 
 ## LOOK UP SIMILARLY FUNDED COMMITTEES

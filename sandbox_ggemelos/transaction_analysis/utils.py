@@ -86,6 +86,16 @@ def calc_icdf(x: Iterable[float], counts: Iterable[int], values: Iterable[float]
 def get_db_login_info() -> Dict[str, str]:
     '''
     Get database login details.  Looks for elections_login.json in the path.
+
+    File schema:
+
+        {
+        "ip": "xxx",
+        "db": "xxx",
+        "username": "xxx",
+        "password": "xxx"
+        }
+
     :return:
     '''
 
