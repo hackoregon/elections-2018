@@ -3,7 +3,8 @@ Graph Module
 '''
 
 import os
-from typing import Dict, Tuple, Optional, Set, Iterable, Any
+from io import StringIO
+from typing import Dict, Tuple, Optional, Set, Iterable, Any, List
 from collections import defaultdict as ddict
 import numpy as np
 import pandas as pd
@@ -49,7 +50,7 @@ class Graph(object):
             self.degrees_counts[self.graph.degree(node)] += 1
 
     @CachedProperty
-    def conn_comp(self):
+    def conn_comp(self) -> List[nx.Graph]:
         '''
         Connected components of the graph
         '''
@@ -142,10 +143,19 @@ class Graph(object):
 
         return self.graph.subgraph(get_node_list(self.graph, node_id, distance, [node_id]))
 
-    def _create_d3_file(self,
-                        filename,
-                        nodes: Optional[Iterable[int]]=None,
-                        groups: Optional[Dict[str, Iterable[int]]]=None):
+    def create_d3_file(self,
+                       filename: Optional[str]=None,
+                       nodes: Optional[Iterable[int]]=None,
+                       groups: Optional[Dict[str, Iterable[int]]]=None) -> Optional[str]:
+        '''
+        Create graph JSON file used with D3 visualization.
+
+        :param filename:  File to save JSON file.  If None, JSON file text is returned as a string. (Default: None)
+        :param nodes: List of nodes to include.  If None, all nodes are included (Default: None)
+        :param groups: Groups
+        :return: Optional[str]
+        '''
+
         lookUp = {}
         node_json = []
 
@@ -192,17 +202,22 @@ class Graph(object):
             else:
                 link['value'] = 9 * (link['value'] - min_weight) / (max_weight - min_weight) + 1
 
-        loadJSON = {}
-        loadJSON["nodes"] = node_json
-        loadJSON["links"] = link_json
+        load_json = {}
+        load_json["nodes"] = node_json
+        load_json["links"] = link_json
 
-        with open(filename, 'w') as fout:
-            json.dump(loadJSON, fout, indent=4)
+        if filename is None:
+            io = StringIO()
+            json.dump(load_json, io, indent=4)
+            return io.getvalue()
+        else:
+            with open(filename, 'w') as fout:
+                json.dump(load_json, fout, indent=4)
 
     def show_in_d3_force_directed(self,
                                   file_path,
                                   nodes: Optional[Iterable[int]]=None,
-                                  groups: Optional[Dict[str, Iterable[int]]]=None):
+                                  groups: Optional[Dict[str, Iterable[int]]]=None) -> None:
         '''
         Show graph in D3 visualization.  Function will create necessary D3 files and launch browser to display graph.
 
@@ -211,7 +226,7 @@ class Graph(object):
                       large, this could freeze the browser.
         :param groups: Optional dictionary where keys are group names and values are lists of node ids.
         '''
-        def create_d3_html_file(filename, graph_file):
+        def create_d3_html_file(filename: str, graph_file: str) -> None:
             html_code = '''
             <!DOCTYPE html>
             <meta charset="utf-8">
@@ -290,7 +305,7 @@ class Graph(object):
         graph_file = os.path.join(file_path, 'graph.json')
         html_file = os.path.join(file_path, 'force_directed.html')
 
-        self._create_d3_file(filename=graph_file, nodes=nodes, groups=groups)
+        self.create_d3_file(filename=graph_file, nodes=nodes, groups=groups)
         create_d3_html_file(filename=html_file, graph_file=graph_file)
 
         webbrowser.open('file://' + html_file)
@@ -326,7 +341,7 @@ class DiGraph(Graph):
         return self.graph.to_undirected()
 
     @CachedProperty
-    def conn_comp(self):
+    def conn_comp(self) -> List[nx.Graph]:
         return sorted(nxconn.connected_component_subgraphs(self.undirected_graph),
                       key=lambda g: g.number_of_nodes(),
                       reverse=True)
