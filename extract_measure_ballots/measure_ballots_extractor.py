@@ -137,5 +137,11 @@ class BallotsExtractor(object):
                     
                     ballots_data[election_type].append(campaign)  
 
+        df_list = []
+        for types, ballots in ballots_data.items():
+            df = DF(ballots_data[types])
+            df_list.append(df)
+        ballots_df = pd.concat(df_list)
+        ballots_df
         
-        return ballots_data
+        return ballots_df
